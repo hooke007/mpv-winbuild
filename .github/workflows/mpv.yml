@@ -435,14 +435,6 @@ jobs:
                 core.exportVariable( `${type}_path`, file );
               }
             }
-            
-            let { stdout: ffmpeg_hash } = await exec.getExecOutput("git -C mpv-winbuild-cmake/src_packages/ffmpeg rev-parse --short HEAD");
-            ffmpeg_hash = ffmpeg_hash.trim();
-            const ffmpeg_name = `ffmpeg${lgpl}-${arch}-git-${ffmpeg_hash}`;
-            core.exportVariable( 'ffmpeg_name', ffmpeg_name );
-            const globber = await glob.create(`./mpv-winbuild-cmake/build${{ matrix.bit }}/**/ffmpeg.exe`);
-            const ffmpeg_path = (await globber.glob())[0]
-            await exec.exec(`7z a -m0=lzma2 -mx=9 -ms=on mpv-winbuild-cmake/release/${ffmpeg_name}.7z ${ffmpeg_path}`)
 
       - name: upload mpv-debug
         uses: actions/upload-artifact@v4
@@ -462,13 +454,6 @@ jobs:
         with:
           name: ${{ env.mpv_name }}
           path: ${{ env.mpv_path }}
-          
-      - name: upload ffmpeg
-        uses: actions/upload-artifact@v4
-        if: ${{ env.ffmpeg_name }}
-        with:
-          name: ${{ env.ffmpeg_name }}
-          path: mpv-winbuild-cmake/release/${{ env.ffmpeg_name }}.7z
 
       - name: Save clang sysroot cache
         if: ${{ inputs.compiler =='clang' && inputs.no_save_cache != true && matrix.lgpl != true }}
@@ -608,7 +593,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           path: artifacts
-          pattern: '{mpv,ffmpeg}*'
+          pattern: '{mpv}*'
           merge-multiple: true
     
       - name: "Check artifacts"
@@ -689,7 +674,7 @@ jobs:
             const { basename } = require('path');
             const { createHash } = require('crypto');
             const { readFileSync,writeFileSync } = require('fs');
-            const globber = await glob.create([`artifacts/mpv*.7z`,`artifacts/ffmpeg*.7z`].join('\n'));
+            const globber = await glob.create([`artifacts/mpv*.7z`].join('\n'));
             const files = await globber.glob();
             if ( files.length > 0 ) {
               let sha256="";
@@ -704,7 +689,7 @@ jobs:
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "artifacts/mpv*.7z,artifacts/ffmpeg*.7z,sha256.txt"
+          artifacts: "artifacts/mpv*.7z,sha256.txt"
           commit: version
           name: "${{ env.long_time }}"
           body: "${{ steps.note.outputs.note }}"
